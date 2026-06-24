@@ -1,104 +1,88 @@
 const HTML = `<!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>itx-news</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px; line-height: 1.6; color: #111; background: #f8fafc; }
-    h1, h2, h3 { color: #1f2937; }
-    input, button, textarea { font: inherit; }
-    .panel { background: white; border: 1px solid #d1d5db; border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(15,23,42,.08); }
-    .site-item, .news-item { margin-bottom: 14px; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    button { border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer; background: #2563eb; color: white; transition: background .2s ease; }
-    button.secondary { background: #4b5563; }
-    button.danger { background: #dc2626; }
-    button:hover { filter: brightness(1.05); }
-    .notice { margin-top: 10px; color: #374151; }
-    textarea { width: 100%; min-height: 140px; margin-top: 10px; border: 1px solid #d1d5db; border-radius: 10px; padding: 10px; resize: vertical; }
-    .news-summary { white-space: pre-wrap; }
-    a { color: #2563eb; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    :root { --pico-font-size: 15px; }
+    body { max-width: 860px; padding: 1rem 1.5rem; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1rem; margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .site-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid var(--pico-muted-border-color); font-size: 0.875rem; }
+    .site-row:last-child { border-bottom: none; }
+    .site-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .site-row button { margin: 0; padding: 0.15rem 0.5rem; font-size: 0.72rem; }
+    .news-summary { white-space: pre-wrap; font-size: 0.875rem; margin: 0.25rem 0 0.5rem; color: var(--pico-muted-color); }
+    .news-actions { display: flex; gap: 0.5rem; }
+    .news-actions button { padding: 0.3rem 0.75rem; font-size: 0.8rem; margin: 0; }
+    article p { margin-bottom: 0.2rem; font-size: 0.85rem; }
   </style>
 </head>
 <body>
-  <div class="panel">
+  <header>
     <h1>itx-news</h1>
-    <p>登録したサイトからテキストベースのニュースを取りに行き、要約します。興味のないニュースを選択すると、次回以降は似た内容を省きます。</p>
-  </div>
+    <p>登録サイトからニュースを取得・要約します。</p>
+  </header>
 
-  <div class="panel">
-    <h2>サイト登録</h2>
-    <p>ニュース取得元の URL を追加してください。</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <input id="site-url" type="url" placeholder="https://example.com/news" style="flex:1; min-width:220px; padding:10px; border:1px solid #d1d5db; border-radius:10px;" />
-      <button id="add-site">登録</button>
-    </div>
-    <div id="site-list" style="margin-top:18px;"></div>
-  </div>
+  <main>
+    <article>
+      <h2>サイト登録</h2>
+      <div style="display:flex; gap:0.5rem;">
+        <input id="site-url" type="url" placeholder="https://example.com/news" style="flex:1; margin:0;" />
+        <button id="add-site" style="white-space:nowrap; margin:0;">登録</button>
+      </div>
+      <div id="site-list" style="margin-top:0.75rem;"></div>
+    </article>
 
-  <div class="panel">
-    <h2>ニュース取得</h2>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
-      <input id="fetch-url" type="url" placeholder="任意のニュースサイト URL を指定（未入力なら登録サイト全体）" style="flex:1; min-width:220px; padding:10px; border:1px solid #d1d5db; border-radius:10px;" />
-      <button id="fetch-news">最新ニュースを取得</button>
-    </div>
-    <p class="notice">指定した URL がある場合はそのサイトのみを取得します。空欄なら登録サイト全体から取得します。</p>
-  </div>
+    <article style="display:flex; align-items:center; justify-content:space-between; padding: 0.75rem 1rem;">
+      <strong style="font-size:0.95rem;">ニュース取得</strong>
+      <button id="fetch-news" style="margin:0;">最新ニュースを取得</button>
+    </article>
 
-  <div id="news-list"></div>
+    <div id="news-list"></div>
+  </main>
 
   <script>
     const siteUrlInput = document.getElementById('site-url');
-    const fetchUrlInput = document.getElementById('fetch-url');
     const siteList = document.getElementById('site-list');
     const newsList = document.getElementById('news-list');
-    const addSiteButton = document.getElementById('add-site');
-    const fetchNewsButton = document.getElementById('fetch-news');
 
-    addSiteButton.addEventListener('click', async () => {
+    document.getElementById('add-site').addEventListener('click', async () => {
       const url = siteUrlInput.value.trim();
       if (!url) return alert('URL を入力してください');
-      const response = await fetch('/api/sites', {
+      const res = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
-      if (!response.ok) return alert('追加に失敗しました');
+      if (!res.ok) return alert('追加に失敗しました');
       siteUrlInput.value = '';
       await loadSites();
     });
 
-    fetchNewsButton.addEventListener('click', async () => {
+    document.getElementById('fetch-news').addEventListener('click', async () => {
       newsList.innerHTML = '<p>取得中...</p>';
-      const fetchUrl = fetchUrlInput.value.trim();
-      const query = fetchUrl ? \`?url=\${encodeURIComponent(fetchUrl)}\` : '';
-      const response = await fetch(\`/api/fetch\${query}\`);
-      if (!response.ok) {
-        newsList.innerHTML = '<p>ニュース取得に失敗しました。</p>';
-        return;
-      }
-      const items = await response.json();
-      renderNews(items);
+      const res = await fetch('/api/fetch');
+      if (!res.ok) { newsList.innerHTML = '<p>ニュース取得に失敗しました。</p>'; return; }
+      renderNews(await res.json());
     });
 
     async function loadSites() {
-      const response = await fetch('/api/sites');
-      if (!response.ok) return;
-      const data = await response.json();
+      const res = await fetch('/api/sites');
+      if (!res.ok) return;
+      const { sites } = await res.json();
       siteList.innerHTML = '';
-      if (!data.sites.length) {
-        siteList.innerHTML = '<p>まだサイトが登録されていません。</p>';
+      if (!sites.length) {
+        siteList.innerHTML = '<p style="font-size:0.85rem; color:var(--pico-muted-color); margin:0;">まだサイトが登録されていません。</p>';
         return;
       }
-      data.sites.forEach(site => {
+      sites.forEach(site => {
         const el = document.createElement('div');
-        el.className = 'site-item';
-        el.innerHTML = \`
-          <div><strong>\${site}</strong></div>
-          <div class="actions"><button class="secondary">削除</button></div>
-        \`;
+        el.className = 'site-row';
+        el.innerHTML = \`<span title="\${site}">\${site}</span><button class="secondary outline">×</button>\`;
         el.querySelector('button').addEventListener('click', async () => {
           await fetch('/api/sites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: site }) });
           await loadSites();
@@ -110,43 +94,36 @@ const HTML = `<!DOCTYPE html>
     function renderNews(items) {
       newsList.innerHTML = '';
       if (!items.length) {
-        newsList.innerHTML = '<div class="panel"><p>該当するニュースがありません。サイト登録やフィードバックを確認してください。</p></div>';
+        newsList.innerHTML = '<article><p>該当するニュースがありません。</p></article>';
         return;
       }
       items.forEach(item => {
-        const el = document.createElement('div');
-        el.className = 'news-item';
+        const el = document.createElement('article');
         el.innerHTML = \`
-          <h3>\${escapeHtml(item.title)}</h3>
-          <p><a href="\${escapeHtml(item.url)}" target="_blank" rel="noopener">元記事を開く</a></p>
-          <div class="news-summary"><strong>要約：</strong>\\n\${escapeHtml(item.summary)}</div>
-          <div class="actions">
-            <button class="secondary">興味あり</button>
-            <button class="danger">興味なし</button>
+          <h3><a href="\${e(item.url)}" target="_blank" rel="noopener">\${e(item.title)}</a></h3>
+          <div class="news-summary">\${e(item.summary)}</div>
+          <div class="news-actions">
+            <button class="secondary outline">興味あり</button>
+            <button class="contrast outline">興味なし</button>
           </div>
         \`;
-        el.querySelector('.secondary').addEventListener('click', () => sendFeedback(item, true));
-        el.querySelector('.danger').addEventListener('click', () => sendFeedback(item, false));
+        el.querySelector('.secondary').addEventListener('click', () => feedback(item, true));
+        el.querySelector('.contrast').addEventListener('click', () => feedback(item, false));
         newsList.appendChild(el);
       });
     }
 
-    async function sendFeedback(item, interest) {
+    async function feedback(item, interest) {
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: item.url, title: item.title, summary: item.summary, interest })
       });
-      alert(interest ? '興味ありを保存しました' : '興味なしを保存しました。次回以降、類似ニュースは省かれます');
+      alert(interest ? '興味ありを保存しました' : '次回以降、類似ニュースは省かれます');
     }
 
-    function escapeHtml(value) {
-      return value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    function e(v) {
+      return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
     loadSites();
