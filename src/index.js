@@ -95,10 +95,10 @@ const HTML = `<!DOCTYPE html>
       data.sites.forEach(site => {
         const el = document.createElement('div');
         el.className = 'site-item';
-        el.innerHTML = `
-          <div><strong>${site}</strong></div>
+        el.innerHTML = \`
+          <div><strong>\${site}</strong></div>
           <div class="actions"><button class="secondary">削除</button></div>
-        `;
+        \`;
         el.querySelector('button').addEventListener('click', async () => {
           await fetch('/api/sites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: site }) });
           await loadSites();
@@ -116,15 +116,15 @@ const HTML = `<!DOCTYPE html>
       items.forEach(item => {
         const el = document.createElement('div');
         el.className = 'news-item';
-        el.innerHTML = `
-          <h3>${escapeHtml(item.title)}</h3>
-          <p><a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">元記事を開く</a></p>
-          <div class="news-summary"><strong>要約：</strong>\n${escapeHtml(item.summary)}</div>
+        el.innerHTML = \`
+          <h3>\${escapeHtml(item.title)}</h3>
+          <p><a href="\${escapeHtml(item.url)}" target="_blank" rel="noopener">元記事を開く</a></p>
+          <div class="news-summary"><strong>要約：</strong>\\n\${escapeHtml(item.summary)}</div>
           <div class="actions">
             <button class="secondary">興味あり</button>
             <button class="danger">興味なし</button>
           </div>
-        `;
+        \`;
         el.querySelector('.secondary').addEventListener('click', () => sendFeedback(item, true));
         el.querySelector('.danger').addEventListener('click', () => sendFeedback(item, false));
         newsList.appendChild(el);
