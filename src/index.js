@@ -1,52 +1,51 @@
 const HTML = `<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>itx-news</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
-  <style>
-    :root { --pico-font-size: 15px; }
-    body { max-width: 860px; padding: 1rem 1.5rem; }
-    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1rem; margin-bottom: 0.75rem; }
-    h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
-    .site-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid var(--pico-muted-border-color); font-size: 0.875rem; }
-    .site-row:last-child { border-bottom: none; }
-    .site-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .site-row button { margin: 0; padding: 0.15rem 0.5rem; font-size: 0.72rem; }
-    .news-summary { white-space: pre-wrap; font-size: 0.875rem; margin: 0.25rem 0 0.5rem; color: var(--pico-muted-color); }
-    .news-actions { display: flex; gap: 0.5rem; }
-    .news-actions button { padding: 0.3rem 0.75rem; font-size: 0.8rem; margin: 0; }
-    article p { margin-bottom: 0.2rem; font-size: 0.85rem; }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <header>
-    <h1>itx-news</h1>
-    <p>登録サイトからニュースを取得・要約します。</p>
-  </header>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+  <div class="flex flex-col min-h-screen p-4 md:p-6 gap-4">
 
-  <main>
-    <article>
-      <h2>サイト登録</h2>
-      <div style="display:flex; gap:0.5rem;">
-        <input id="site-url" type="url" placeholder="https://example.com/news" style="flex:1; margin:0;" />
-        <button id="add-site" style="white-space:nowrap; margin:0;">登録</button>
-      </div>
-      <div id="site-list" style="margin-top:0.75rem;"></div>
-    </article>
+    <header class="flex items-baseline gap-3">
+      <h1 class="text-base font-bold tracking-tight">itx-news</h1>
+      <span class="text-xs text-slate-400">登録サイトのニュースを取得・要約</span>
+    </header>
 
-    <article style="display:flex; align-items:center; justify-content:space-between; padding: 0.75rem 1rem;">
-      <strong style="font-size:0.95rem;">ニュース取得</strong>
-      <button id="fetch-news" style="margin:0;">最新ニュースを取得</button>
-    </article>
+    <div class="flex gap-4 flex-1">
 
-    <div id="news-list"></div>
-  </main>
+      <aside class="w-56 shrink-0">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sticky top-4">
+          <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">サイト登録</p>
+          <div class="space-y-2">
+            <input id="site-name" type="text" placeholder="サイト名（省略可）"
+              class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <input id="site-url" type="url" placeholder="https://..."
+              class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <button id="add-site"
+              class="w-full py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">登録</button>
+          </div>
+          <div id="site-list" class="mt-3 divide-y divide-slate-100"></div>
+        </div>
+      </aside>
+
+      <main class="flex-1 min-w-0">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">ニュース</p>
+          <button id="fetch-news"
+            class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">最新ニュースを取得</button>
+        </div>
+        <div id="news-list" class="space-y-3"></div>
+      </main>
+
+    </div>
+  </div>
 
   <script>
     const siteUrlInput = document.getElementById('site-url');
+    const siteNameInput = document.getElementById('site-name');
     const siteList = document.getElementById('site-list');
     const newsList = document.getElementById('news-list');
 
@@ -56,17 +55,18 @@ const HTML = `<!DOCTYPE html>
       const res = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url, name: siteNameInput.value.trim() })
       });
       if (!res.ok) return alert('追加に失敗しました');
       siteUrlInput.value = '';
+      siteNameInput.value = '';
       await loadSites();
     });
 
     document.getElementById('fetch-news').addEventListener('click', async () => {
-      newsList.innerHTML = '<p>取得中...</p>';
+      newsList.innerHTML = '<p class="text-sm text-slate-400">取得中...</p>';
       const res = await fetch('/api/fetch');
-      if (!res.ok) { newsList.innerHTML = '<p>ニュース取得に失敗しました。</p>'; return; }
+      if (!res.ok) { newsList.innerHTML = '<p class="text-sm text-red-400">取得に失敗しました。</p>'; return; }
       renderNews(await res.json());
     });
 
@@ -76,15 +76,21 @@ const HTML = `<!DOCTYPE html>
       const { sites } = await res.json();
       siteList.innerHTML = '';
       if (!sites.length) {
-        siteList.innerHTML = '<p style="font-size:0.85rem; color:var(--pico-muted-color); margin:0;">まだサイトが登録されていません。</p>';
+        siteList.innerHTML = '<p class="text-xs text-slate-300 mt-2 text-center">まだ登録されていません</p>';
         return;
       }
       sites.forEach(site => {
         const el = document.createElement('div');
-        el.className = 'site-row';
-        el.innerHTML = \`<span title="\${site}">\${site}</span><button class="secondary outline">×</button>\`;
+        el.className = 'flex items-center gap-2 py-2';
+        el.innerHTML = \`
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate">\${e(site.name)}</div>
+            <div class="text-xs text-slate-400 truncate">\${e(site.url)}</div>
+          </div>
+          <button class="text-slate-300 hover:text-red-400 text-base px-1 shrink-0 transition-colors leading-none">×</button>
+        \`;
         el.querySelector('button').addEventListener('click', async () => {
-          await fetch('/api/sites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: site }) });
+          await fetch('/api/sites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: site.url }) });
           await loadSites();
         });
         siteList.appendChild(el);
@@ -94,21 +100,24 @@ const HTML = `<!DOCTYPE html>
     function renderNews(items) {
       newsList.innerHTML = '';
       if (!items.length) {
-        newsList.innerHTML = '<article><p>該当するニュースがありません。</p></article>';
+        newsList.innerHTML = '<div class="bg-white rounded-2xl border border-slate-200 p-4 text-sm text-slate-400">該当するニュースがありません。</div>';
         return;
       }
       items.forEach(item => {
-        const el = document.createElement('article');
+        const el = document.createElement('div');
+        el.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm p-4';
         el.innerHTML = \`
-          <h3><a href="\${e(item.url)}" target="_blank" rel="noopener">\${e(item.title)}</a></h3>
-          <div class="news-summary">\${e(item.summary)}</div>
-          <div class="news-actions">
-            <button class="secondary outline">興味あり</button>
-            <button class="contrast outline">興味なし</button>
+          <h3 class="font-semibold text-sm mb-1">
+            <a href="\${e(item.url)}" target="_blank" rel="noopener" class="hover:text-blue-600 transition-colors">\${e(item.title)}</a>
+          </h3>
+          <p class="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap mb-3">\${e(item.summary)}</p>
+          <div class="flex gap-2">
+            <button class="btn-yes px-3 py-1 text-xs rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-500 transition-colors">興味あり</button>
+            <button class="btn-no px-3 py-1 text-xs rounded-lg bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-500 transition-colors">興味なし</button>
           </div>
         \`;
-        el.querySelector('.secondary').addEventListener('click', () => feedback(item, true));
-        el.querySelector('.contrast').addEventListener('click', () => feedback(item, false));
+        el.querySelector('.btn-yes').addEventListener('click', () => feedback(item, true));
+        el.querySelector('.btn-no').addEventListener('click', () => feedback(item, false));
         newsList.appendChild(el);
       });
     }
@@ -161,9 +170,10 @@ export default {
       const body = await request.json();
       const url = normalizeUrl(body.url);
       if (!url) return json({ error: '無効な URL です' }, 400);
+      const name = (body.name || '').trim() || new URL(url).hostname;
       const sites = await readJson(env.SITES, KV_SITES_KEY, []);
-      if (!sites.includes(url)) {
-        sites.push(url);
+      if (!sites.some(s => (s.url || s) === url)) {
+        sites.push({ name, url });
         await env.SITES.put(KV_SITES_KEY, JSON.stringify(sites));
       }
       return json({ sites });
@@ -172,7 +182,7 @@ export default {
       const body = await request.json();
       const url = normalizeUrl(body.url);
       const sites = await readJson(env.SITES, KV_SITES_KEY, []);
-      const updated = sites.filter(item => item !== url);
+      const updated = sites.filter(s => (s.url || s) !== url);
       await env.SITES.put(KV_SITES_KEY, JSON.stringify(updated));
       return json({ sites: updated });
     }
@@ -183,7 +193,7 @@ export default {
     const sites = await readJson(env.SITES, KV_SITES_KEY, []);
     const url = new URL(request.url);
     const targetUrl = url.searchParams.get('url');
-    const sources = targetUrl ? [targetUrl] : sites;
+    const sources = targetUrl ? [targetUrl] : sites.map(s => s.url || s);
     if (!sources.length) return json([]);
     const ignored = await readJson(env.IGNORED, KV_IGNORED_KEY, []);
     const items = [];
