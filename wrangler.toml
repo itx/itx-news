@@ -1,11 +1,11 @@
 name = "itx-news"
 main = "src/index.js"
 compatibility_date = "2026-06-23"
-type = "javascript"
+account_id = "138612f925779e7ac3400cfcc7c13a0b"
 
 # Create KV namespaces with `wrangler kv:namespace create SITES` and `wrangler kv:namespace create IGNORED`
 # Then add the resulting IDs here before publishing.
 kv_namespaces = [
-  { binding = "SITES", id = "PUT_SITES_NAMESPACE_ID_HERE" },
-  { binding = "IGNORED", id = "PUT_IGNORED_NAMESPACE_ID_HERE" }
+  { binding = "SITES",   id = "b62be2a9691f4c3b9ac45787681f584d" },
+  { binding = "IGNORED", id = "678be4e5cf8d43cf8e2834187d05be8d" }
 ]
