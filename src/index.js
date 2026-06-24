@@ -268,6 +268,10 @@ async function extractItemsFromHtml(html, siteUrl) {
         articles.push(article);
         stack.push(article);
         el.onEndTag(() => stack.pop());
+      },
+      text(chunk) {
+        const cur = stack[stack.length - 1];
+        if (cur) cur.text += chunk.text + ' ';
       }
     })
     .on('a', {
@@ -283,13 +287,6 @@ async function extractItemsFromHtml(html, siteUrl) {
       text(chunk) {
         const cur = stack[stack.length - 1];
         if (cur) cur.title += chunk.text;
-      }
-    })
-    .on('p, li, blockquote', {
-      text(chunk) {
-        const cur = stack[stack.length - 1];
-        if (cur) cur.text += chunk.text + ' ';
-        else fallbackText += chunk.text + ' ';
       }
     })
     .transform(new Response(html, { headers: { 'Content-Type': 'text/html' } }))
