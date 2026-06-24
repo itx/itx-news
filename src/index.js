@@ -252,7 +252,7 @@ async function readJson(kv, key, fallback) {
   try { return JSON.parse(stored); } catch (e) { return fallback; }
 }
 
-async function extractItemsFromHtml(html, url) {
+async function extractItemsFromHtml(html, siteUrl) {
   const articles = [];
   const stack = [];
   let pageTitle = '';
@@ -264,10 +264,19 @@ async function extractItemsFromHtml(html, url) {
     })
     .on('article', {
       element(el) {
-        const article = { title: '', text: '', url };
+        const article = { title: '', text: '', url: siteUrl };
         articles.push(article);
         stack.push(article);
         el.onEndTag(() => stack.pop());
+      }
+    })
+    .on('a', {
+      element(el) {
+        const cur = stack[stack.length - 1];
+        if (cur && !cur.url) {
+          const href = el.getAttribute('href');
+          if (href && /^https?:\/\//.test(href) && !href.includes('#')) cur.url = href;
+        }
       }
     })
     .on('h1, h2, h3, h4', {
@@ -276,7 +285,7 @@ async function extractItemsFromHtml(html, url) {
         if (cur) cur.title += chunk.text;
       }
     })
-    .on('p, li', {
+    .on('p, li, blockquote', {
       text(chunk) {
         const cur = stack[stack.length - 1];
         if (cur) cur.text += chunk.text + ' ';
@@ -286,16 +295,16 @@ async function extractItemsFromHtml(html, url) {
     .transform(new Response(html, { headers: { 'Content-Type': 'text/html' } }))
     .text();
 
-  const withText = articles.filter(a => a.text.trim());
-  if (withText.length) {
-    return withText.map(a => ({
-      title: (a.title.trim() || pageTitle.trim() || url).slice(0, 200),
+  const valid = articles.filter(a => a.title.trim() || a.text.trim());
+  if (valid.length) {
+    return valid.map(a => ({
+      title: (a.title.trim() || pageTitle.trim() || siteUrl).slice(0, 200),
       text: a.text.trim().slice(0, MAX_TEXT_LENGTH),
-      url
+      url: a.url || siteUrl
     }));
   }
 
-  return [{ title: pageTitle.trim() || url, text: fallbackText.trim().slice(0, MAX_TEXT_LENGTH), url }];
+  return [{ title: pageTitle.trim() || siteUrl, text: fallbackText.trim().slice(0, MAX_TEXT_LENGTH), url: siteUrl }];
 }
 
 function summarizeText(text, maxSentences) {
