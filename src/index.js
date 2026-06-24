@@ -163,7 +163,8 @@ export default {
 
   async handleSites(request, env) {
     if (request.method === 'GET') {
-      const sites = await readJson(env.SITES, KV_SITES_KEY, []);
+      const raw = await readJson(env.SITES, KV_SITES_KEY, []);
+      const sites = raw.map(s => typeof s === 'string' ? { name: new URL(s).hostname, url: s } : s);
       return json({ sites });
     }
     if (request.method === 'POST') {
