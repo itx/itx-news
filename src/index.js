@@ -253,31 +253,49 @@ async function readJson(kv, key, fallback) {
 }
 
 async function extractItemsFromHtml(html, url) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const items = [];
-  const articles = Array.from(doc.querySelectorAll('article'));
-  if (articles.length) {
-    for (const article of articles) {
-      const title = extractElementText(article, ['h1','h2','h3','h4']) || doc.title || url;
-      const text = extractElementText(article, ['p','li']) || article.textContent || '';
-      items.push({ title: title.trim(), text: text.trim().slice(0, MAX_TEXT_LENGTH), url });
-    }
-    return items.length ? items : [createFallbackItem(doc, url)];
+  const articles = [];
+  const stack = [];
+  let pageTitle = '';
+  let fallbackText = '';
+
+  await new HTMLRewriter()
+    .on('title', {
+      text(chunk) { pageTitle += chunk.text; }
+    })
+    .on('article', {
+      element(el) {
+        const article = { title: '', text: '', url };
+        articles.push(article);
+        stack.push(article);
+        el.onEndTag(() => stack.pop());
+      }
+    })
+    .on('h1, h2, h3, h4', {
+      text(chunk) {
+        const cur = stack[stack.length - 1];
+        if (cur) cur.title += chunk.text;
+      }
+    })
+    .on('p, li', {
+      text(chunk) {
+        const cur = stack[stack.length - 1];
+        if (cur) cur.text += chunk.text + ' ';
+        else fallbackText += chunk.text + ' ';
+      }
+    })
+    .transform(new Response(html, { headers: { 'Content-Type': 'text/html' } }))
+    .text();
+
+  const withText = articles.filter(a => a.text.trim());
+  if (withText.length) {
+    return withText.map(a => ({
+      title: (a.title.trim() || pageTitle.trim() || url).slice(0, 200),
+      text: a.text.trim().slice(0, MAX_TEXT_LENGTH),
+      url
+    }));
   }
-  return [createFallbackItem(doc, url)];
-}
 
-function createFallbackItem(doc, url) {
-  const title = doc.querySelector('title')?.textContent?.trim() || url;
-  const snippet = Array.from(doc.querySelectorAll('p,li')).map(el => el.textContent.trim()).filter(Boolean).slice(0, 8).join('\n\n');
-  const text = snippet || doc.body?.textContent?.trim() || '';
-  return { title, text: text.slice(0, MAX_TEXT_LENGTH), url };
-}
-
-function extractElementText(root, selectors) {
-  const nodes = selectors.flatMap(selector => Array.from(root.querySelectorAll(selector)));
-  return nodes.map(node => node.textContent.trim()).filter(Boolean).join('\n\n');
+  return [{ title: pageTitle.trim() || url, text: fallbackText.trim().slice(0, MAX_TEXT_LENGTH), url }];
 }
 
 function summarizeText(text, maxSentences) {
