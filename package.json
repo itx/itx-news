@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "publish": "wrangler publish"
+    "publish": "wrangler deploy"
   },
   "devDependencies": {
     "wrangler": "^3.0.0"

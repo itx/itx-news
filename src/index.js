@@ -73,8 +73,8 @@ const HTML = `<!DOCTYPE html>
     fetchNewsButton.addEventListener('click', async () => {
       newsList.innerHTML = '<p>取得中...</p>';
       const fetchUrl = fetchUrlInput.value.trim();
-      const query = fetchUrl ? `?url=${encodeURIComponent(fetchUrl)}` : '';
-      const response = await fetch(`/api/fetch${query}`);
+      const query = fetchUrl ? \`?url=\${encodeURIComponent(fetchUrl)}\` : '';
+      const response = await fetch(\`/api/fetch\${query}\`);
       if (!response.ok) {
         newsList.innerHTML = '<p>ニュース取得に失敗しました。</p>';
         return;
