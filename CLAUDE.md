@@ -1,64 +1,57 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、Claude Code がこのリポジトリで作業する際のガイドです。
 
 ## 言語
 
-ユーザーへの回答・説明は必ず**日本語**で行うこと。
+ユーザーへの回答・説明は必ず**日本語**で行ってください。
 
-## Commands
+## コマンド
 
 ```bash
-npm run dev       # local dev server via wrangler dev
-npm run publish   # deploy to Cloudflare Workers
+npm run dev       # ローカルで wrangler dev を実行
+npm run publish   # Cloudflare Workers に公開
 ```
 
-No test runner is configured.
+## プロジェクト概要
 
-## Architecture
+- `src/index.js` で Cloudflare Worker を実装しています。
+- フロントエンドと API はこの Worker で一体的に提供されます。
+- 取得元は基本的に RSS フィードです。
+- `https://lifehacker.com/rss` を中心に動作を想定します。
 
-Single Cloudflare Worker (`src/index.js`) serving both a frontend and API. The entire app — HTML, client-side JS, and Worker logic — lives in this one file.
+## KV ネームスペース
 
-### KV Namespaces
+以下の KV バインディングを利用します:
 
-Two KV namespaces are bound to the Worker:
+| Binding | Key | 内容 |
+|---------|-----|------|
+| `SITES` | `sites` | 登録済み RSS フィード URL の配列 |
+| `IGNORED` | `patterns` | 興味なし判断で蓄積された抑止パターンの配列 |
 
-| Binding | Key | Value |
-|---------|-----|-------|
-| `SITES` | `"sites"` | JSON array of registered site URLs |
-| `IGNORED` | `"patterns"` | JSON array of keyword patterns to suppress (max 120) |
+`wrangler.toml` のプレースホルダ ID はデプロイ前に実際の値に置き換えてください。
 
-Before first deploy, replace the placeholder IDs in `wrangler.toml` (`PUT_ACCOUNT_ID_HERE`, `PUT_SITES_NAMESPACE_ID_HERE`, `PUT_IGNORED_NAMESPACE_ID_HERE`) with real Cloudflare values. Create namespaces with:
-```bash
-wrangler kv:namespace create SITES
-wrangler kv:namespace create IGNORED
-```
+## API ルート
 
-### API Routes
+| Route | メソッド | 役割 |
+|-------|---------|------|
+| `/` | GET | SPA の HTML を返す |
+| `/api/sites` | GET, POST, DELETE | RSS フィード URL の管理 |
+| `/api/fetch` | GET | RSS から記事を取得して要約する |
+| `/api/feedback` | POST | 興味フィードバックを保存する |
 
-| Route | Methods | Purpose |
-|-------|---------|---------|
-| `/` | GET | Serves the HTML SPA |
-| `/api/sites` | GET, POST, DELETE | Manage registered site URLs |
-| `/api/fetch` | GET | Fetch and summarize news; optional `?url=` param to target one site |
-| `/api/feedback` | POST | Record interest/disinterest; disinterest extracts keyword patterns into IGNORED |
+## 仕様
 
-### Summarization (`summarizeText`)
+- RSS から記事を取得し、本文や説明を要約します。
+- フィードバックで `興味なし` を選択した項目は、次回以降の取得時に除外しやすくします。
+- `lifehacker.com/rss` を優先的に利用します。
 
-Uses a simple TF-IDF-like frequency scoring: builds a word frequency map from the full text (excluding stop words in `STOP_WORDS`), scores each sentence by the summed frequency of its constituent words (≥3 chars), selects the top-N by score, then re-orders them by original position. Falls back to the first N sentences if scoring yields nothing.
+## デプロイ
 
-### Filtering
+- `main` ブランチへの push または `workflow_dispatch` で GitHub Actions が `wrangler publish` を実行します。
+- 手動デプロイは `npm run publish` です。
 
-When a user marks a news item "not interested", `extractIgnorePatterns` pulls keywords from the title, summary, and URL and appends them to the IGNORED KV store. On subsequent `/api/fetch` calls, any item whose combined `title + text + summary` contains any pattern in IGNORED is silently dropped.
+### 必要な GitHub Secrets
 
-### HTML extraction (`extractItemsFromHtml`)
-
-Prefers `<article>` elements. Within each article, extracts heading text and `<p>`/`<li>` text separately. Falls back to the page's `<p>`/`<li>` tags if no `<article>` tags are found.
-
-## Deployment
-
-`main` ブランチへの push（PR マージ含む）または `workflow_dispatch` で、GitHub Actions (`.github/workflows/deploy.yml`) が自動的に `wrangler publish` を実行し Cloudflare Workers へデプロイされる。手動デプロイは `npm run publish`。
-
-リポジトリ Secrets に以下を設定する必要がある:
-- `CF_API_TOKEN` — Cloudflare API token with Workers deploy permission
-- `CF_ACCOUNT_ID` — Cloudflare account ID
+- `CF_API_TOKEN` — Cloudflare Workers へのデプロイ権限を持つ API トークン
+- `CF_ACCOUNT_ID` — Cloudflare アカウント ID
