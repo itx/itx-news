@@ -6,38 +6,38 @@ const HTML = `<!DOCTYPE html>
   <title>itx-news</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
-  <div class="flex flex-col min-h-screen p-4 md:p-6 gap-4">
+<body class="bg-slate-100 text-slate-900">
+  <div class="flex flex-col min-h-screen">
 
-    <header class="flex items-baseline gap-3">
-      <h1 class="text-base font-bold tracking-tight">itx-news</h1>
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3 shrink-0">
+      <h1 class="text-sm font-bold tracking-tight">itx-news</h1>
       <span class="text-xs text-slate-400">登録サイトのニュースを取得・要約</span>
     </header>
 
-    <div class="flex gap-4 flex-1">
+    <div class="flex flex-1 min-h-0">
 
-      <aside class="w-56 shrink-0">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sticky top-4">
+      <aside class="w-64 shrink-0 bg-white border-r border-slate-200 flex flex-col">
+        <div class="p-4 flex-1 overflow-y-auto">
           <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">サイト登録</p>
           <div class="space-y-2">
             <input id="site-name" type="text" placeholder="サイト名（省略可）"
-              class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
             <input id="site-url" type="url" placeholder="https://..."
-              class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
             <button id="add-site"
-              class="w-full py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">登録</button>
+              class="w-full py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">登録</button>
           </div>
-          <div id="site-list" class="mt-3 divide-y divide-slate-100"></div>
+          <div id="site-list" class="mt-4 divide-y divide-slate-100"></div>
         </div>
       </aside>
 
-      <main class="flex-1 min-w-0">
-        <div class="flex items-center justify-between mb-3">
+      <main class="flex-1 min-w-0 p-6 overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
           <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">ニュース</p>
           <button id="fetch-news"
-            class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">最新ニュースを取得</button>
+            class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">最新ニュースを取得</button>
         </div>
-        <div id="news-list" class="space-y-3"></div>
+        <div id="news-list" class="grid gap-3 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3"></div>
       </main>
 
     </div>
@@ -100,12 +100,12 @@ const HTML = `<!DOCTYPE html>
     function renderNews(items) {
       newsList.innerHTML = '';
       if (!items.length) {
-        newsList.innerHTML = '<div class="bg-white rounded-2xl border border-slate-200 p-4 text-sm text-slate-400">該当するニュースがありません。</div>';
+        newsList.innerHTML = '<div class="col-span-full bg-white rounded-xl border border-slate-200 p-4 text-sm text-slate-400">該当するニュースがありません。</div>';
         return;
       }
       items.forEach(item => {
         const el = document.createElement('div');
-        el.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm p-4';
+        el.className = 'bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col';
         el.innerHTML = \`
           <h3 class="font-semibold text-sm mb-1">
             <a href="\${e(item.url)}" target="_blank" rel="noopener" class="hover:text-blue-600 transition-colors">\${e(item.title)}</a>
