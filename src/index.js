@@ -205,7 +205,7 @@ export default {
         const html = await page.text();
         const siteItems = await extractItemsFromHtml(html, site);
         siteItems.forEach(item => {
-          if (!item.text.trim()) return;
+          if (!item.title.trim() && !item.text.trim()) return;
           item.summary = summarizeText(item.text, MAX_SUMMARY_SENTENCES);
           const lower = (item.title + '\n' + item.text + '\n' + item.summary).toLowerCase();
           const skip = ignored.some(pattern => pattern && lower.includes(pattern.toLowerCase()));
